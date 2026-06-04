@@ -1,1409 +1,1049 @@
-# Next.js Core Concepts, Properties, Methods, APIs, and File Conventions
+# NestJS Core Concepts, Properties, Methods, Decorators, and APIs
 
-## What is Next.js?
+## What is NestJS?
 
-Next.js is a React framework used to build production web applications with:
+NestJS is a TypeScript-based Node.js framework used to build scalable backend applications, REST APIs, GraphQL APIs, WebSocket apps, and microservices.
 
-- File-based routing
-- Server-side rendering
-- Static site generation
-- React Server Components
-- Client Components
-- API routes / Route Handlers
-- Middleware / Proxy
-- Image optimization
-- Metadata / SEO support
-- Full-stack React application support
+NestJS is heavily inspired by Angular architecture. It uses:
 
-Next.js has two routing systems:
-
-| Router | Description |
-|---|---|
-| App Router | Modern router using the `/app` directory and React Server Components |
-| Pages Router | Older router using the `/pages` directory, still supported |
+- Modules
+- Controllers
+- Providers / Services
+- Dependency Injection
+- Decorators
+- Middleware
+- Guards
+- Pipes
+- Interceptors
+- Exception Filters
 
 ---
 
-# 1. Core Next.js Concepts
+# 1. NestFactory
 
-## Server Components
+## What is NestFactory?
 
-In the App Router, components are Server Components by default.
-
-### Use Case
-
-Fetch data securely on the server without exposing secrets to the browser.
-
-```tsx
-// app/users/page.tsx
-
-async function getUsers() {
-  const res = await fetch('https://api.example.com/users');
-  return res.json();
-}
-
-export default async function UsersPage() {
-  const users = await getUsers();
-
-  return (
-    <div>
-      <h1>Users</h1>
-
-      {users.map((user: any) => (
-        <p key={user.id}>{user.name}</p>
-      ))}
-    </div>
-  );
-}
-```
-
----
-
-## Client Components
-
-Client Components run in the browser and support hooks like:
-
-- `useState`
-- `useEffect`
-- `useRouter`
-- `usePathname`
-- `useSearchParams`
-
-Use `"use client"` at the top of the file.
-
-```tsx
-'use client';
-
-import { useState } from 'react';
-
-export default function Counter() {
-  const [count, setCount] = useState(0);
-
-  return (
-    <button onClick={() => setCount(count + 1)}>
-      Count: {count}
-    </button>
-  );
-}
-```
-
----
-
-# 2. App Router File Conventions
-
-Next.js App Router uses special files inside the `/app` directory.
-
-| File | Purpose |
-|---|---|
-| `layout.tsx` | Shared layout for route segment |
-| `page.tsx` | UI for a route |
-| `loading.tsx` | Loading UI |
-| `error.tsx` | Error UI |
-| `not-found.tsx` | 404 UI |
-| `global-error.tsx` | Global error boundary |
-| `template.tsx` | Re-rendered layout wrapper |
-| `route.ts` | API route / Route Handler |
-| `default.tsx` | Fallback for parallel routes |
-| `proxy.ts` | Runs before requests complete |
-
----
-
-# 3. page.tsx
-
-## Purpose
-
-Defines the UI for a route.
-
-## Example
-
-```tsx
-// app/about/page.tsx
-
-export default function AboutPage() {
-  return (
-    <main>
-      <h1>About Us</h1>
-      <p>This is the about page.</p>
-    </main>
-  );
-}
-```
-
-## Route
-
-```txt
-/about
-```
-
----
-
-# 4. layout.tsx
-
-## Purpose
-
-Creates shared UI for multiple pages.
-
-Common use cases:
-
-- Header
-- Footer
-- Sidebar
-- Navigation
-- Shared providers
-
-```tsx
-// app/layout.tsx
-
-import './globals.css';
-
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <html lang="en">
-      <body>
-        <header>My App Header</header>
-
-        {children}
-
-        <footer>My App Footer</footer>
-      </body>
-    </html>
-  );
-}
-```
-
----
-
-# 5. loading.tsx
-
-## Purpose
-
-Displays loading UI while a route is loading.
-
-```tsx
-// app/dashboard/loading.tsx
-
-export default function Loading() {
-  return <p>Loading dashboard...</p>;
-}
-```
-
----
-
-# 6. error.tsx
-
-## Purpose
-
-Handles route-level errors.
-
-Must be a Client Component.
-
-```tsx
-// app/dashboard/error.tsx
-
-'use client';
-
-export default function Error({
-  error,
-  reset,
-}: {
-  error: Error;
-  reset: () => void;
-}) {
-  return (
-    <div>
-      <h2>Something went wrong</h2>
-      <p>{error.message}</p>
-
-      <button onClick={() => reset()}>
-        Try again
-      </button>
-    </div>
-  );
-}
-```
-
----
-
-# 7. not-found.tsx
-
-## Purpose
-
-Custom 404 page for a route segment.
-
-```tsx
-// app/users/not-found.tsx
-
-export default function NotFound() {
-  return (
-    <div>
-      <h1>User Not Found</h1>
-      <p>The requested user does not exist.</p>
-    </div>
-  );
-}
-```
-
-Use with:
-
-```tsx
-import { notFound } from 'next/navigation';
-
-export default function UserPage({ params }: any) {
-  if (!params.id) {
-    notFound();
-  }
-
-  return <div>User Details</div>;
-}
-```
-
----
-
-# 8. route.ts
-
-## Purpose
-
-Creates backend API endpoints inside the App Router.
-
-Supported HTTP methods:
-
-- `GET`
-- `POST`
-- `PUT`
-- `PATCH`
-- `DELETE`
-- `HEAD`
-- `OPTIONS`
-
-```ts
-// app/api/users/route.ts
-
-export async function GET() {
-  return Response.json([
-    { id: 1, name: 'John' },
-    { id: 2, name: 'Mary' },
-  ]);
-}
-
-export async function POST(request: Request) {
-  const body = await request.json();
-
-  return Response.json({
-    message: 'User created',
-    user: body,
-  });
-}
-```
-
----
-
-# 9. Dynamic Routes
-
-## Purpose
-
-Create routes based on dynamic URL values.
-
-## Folder Structure
-
-```txt
-app/users/[id]/page.tsx
-```
-
-## Example
-
-```tsx
-// app/users/[id]/page.tsx
-
-export default function UserPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  return <h1>User ID: {params.id}</h1>;
-}
-```
-
-## Route Example
-
-```txt
-/users/123
-```
-
----
-
-# 10. Catch-All Routes
-
-## Purpose
-
-Match multiple route segments.
-
-## Folder Structure
-
-```txt
-app/docs/[...slug]/page.tsx
-```
-
-## Example
-
-```tsx
-export default function DocsPage({
-  params,
-}: {
-  params: { slug: string[] };
-}) {
-  return (
-    <div>
-      Docs Path: {params.slug.join('/')}
-    </div>
-  );
-}
-```
-
----
-
-# 11. Optional Catch-All Routes
-
-## Folder Structure
-
-```txt
-app/docs/[[...slug]]/page.tsx
-```
-
-Matches:
-
-```txt
-/docs
-/docs/react
-/docs/react/hooks
-```
-
----
-
-# 12. Link Component
-
-## Import
-
-```tsx
-import Link from 'next/link';
-```
-
-## Purpose
-
-`Link` enables client-side navigation and prefetching.
-
-```tsx
-import Link from 'next/link';
-
-export default function HomePage() {
-  return (
-    <nav>
-      <Link href="/dashboard">Dashboard</Link>
-      <Link href="/users">Users</Link>
-    </nav>
-  );
-}
-```
-
-## Common Props
-
-| Prop | Description |
-|---|---|
-| `href` | Destination route |
-| `replace` | Replaces browser history instead of pushing |
-| `scroll` | Controls scroll behavior |
-| `prefetch` | Enables/disables prefetching |
-
----
-
-# 13. Image Component
-
-## Import
-
-```tsx
-import Image from 'next/image';
-```
-
-## Purpose
-
-Optimizes images automatically.
-
-Benefits:
-
-- Lazy loading
-- Size optimization
-- Format optimization
-- Prevents layout shift
-
-```tsx
-import Image from 'next/image';
-
-export default function ProfileImage() {
-  return (
-    <Image
-      src="/profile.png"
-      alt="Profile picture"
-      width={200}
-      height={200}
-    />
-  );
-}
-```
-
-## Common Props
-
-| Prop | Description |
-|---|---|
-| `src` | Image path |
-| `alt` | Accessibility text |
-| `width` | Image width |
-| `height` | Image height |
-| `fill` | Fill parent container |
-| `priority` | Preload important image |
-| `quality` | Image quality |
-| `placeholder` | Placeholder behavior |
-
----
-
-# 14. Script Component
-
-## Import
-
-```tsx
-import Script from 'next/script';
-```
-
-## Purpose
-
-Loads third-party scripts safely and efficiently.
-
-```tsx
-import Script from 'next/script';
-
-export default function AnalyticsScript() {
-  return (
-    <Script
-      src="https://example.com/analytics.js"
-      strategy="afterInteractive"
-    />
-  );
-}
-```
-
-## Common Strategies
-
-| Strategy | Description |
-|---|---|
-| `beforeInteractive` | Loads before page becomes interactive |
-| `afterInteractive` | Loads after hydration |
-| `lazyOnload` | Loads during browser idle time |
-| `worker` | Loads in web worker where supported |
-
----
-
-# 15. Metadata API
-
-## Purpose
-
-Defines SEO metadata.
-
-```tsx
-// app/about/page.tsx
-
-export const metadata = {
-  title: 'About Us',
-  description: 'Learn more about our company',
-};
-
-export default function AboutPage() {
-  return <h1>About Us</h1>;
-}
-```
-
----
-
-# 16. generateMetadata()
-
-## Purpose
-
-Dynamically generate SEO metadata.
-
-```tsx
-export async function generateMetadata({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const user = await fetch(`https://api.example.com/users/${params.id}`)
-    .then(res => res.json());
-
-  return {
-    title: user.name,
-    description: `Profile page for ${user.name}`,
-  };
-}
-```
-
----
-
-# 17. next/navigation APIs
-
-These are used in the App Router.
-
-## Common APIs
-
-| API | Purpose |
-|---|---|
-| `useRouter()` | Client-side navigation |
-| `usePathname()` | Reads current pathname |
-| `useSearchParams()` | Reads query parameters |
-| `useParams()` | Reads dynamic route params |
-| `redirect()` | Server-side redirect |
-| `notFound()` | Render 404 page |
-| `permanentRedirect()` | Permanent server redirect |
-
----
-
-# 18. useRouter()
-
-## Purpose
-
-Programmatic navigation in Client Components.
-
-```tsx
-'use client';
-
-import { useRouter } from 'next/navigation';
-
-export default function LoginButton() {
-  const router = useRouter();
-
-  function handleLogin() {
-    router.push('/dashboard');
-  }
-
-  return (
-    <button onClick={handleLogin}>
-      Login
-    </button>
-  );
-}
-```
+`NestFactory` is used to bootstrap a NestJS application.
 
 ## Common Methods
 
 | Method | Description |
 |---|---|
-| `router.push()` | Navigate to route |
-| `router.replace()` | Replace current route |
-| `router.refresh()` | Refresh current route |
-| `router.back()` | Go back |
-| `router.forward()` | Go forward |
-| `router.prefetch()` | Prefetch route |
+| `NestFactory.create()` | Creates a standard HTTP Nest application |
+| `NestFactory.createMicroservice()` | Creates a Nest microservice |
+| `NestFactory.createApplicationContext()` | Creates a standalone Nest dependency injection context |
+
+## Example
+
+```ts
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+
+async function bootstrap() {
+  // Creates the Nest application
+  const app = await NestFactory.create(AppModule);
+
+  // Starts HTTP server
+  await app.listen(3000);
+}
+
+bootstrap();
+```
 
 ---
 
-# 19. usePathname()
+# 2. INestApplication Methods
 
-## Purpose
+When you call `NestFactory.create()`, it returns an application object.
 
-Read current URL path.
+## Common Application Methods
 
-```tsx
-'use client';
+| Method | Description |
+|---|---|
+| `listen()` | Starts the HTTP server |
+| `close()` | Gracefully shuts down the app |
+| `init()` | Initializes the app without starting HTTP listener |
+| `use()` | Adds middleware |
+| `get()` | Retrieves provider instance |
+| `select()` | Selects a module context |
+| `enableCors()` | Enables CORS |
+| `setGlobalPrefix()` | Adds global route prefix |
+| `useGlobalGuards()` | Registers global guards |
+| `useGlobalPipes()` | Registers global pipes |
+| `useGlobalFilters()` | Registers global exception filters |
+| `useGlobalInterceptors()` | Registers global interceptors |
+| `enableShutdownHooks()` | Enables graceful shutdown lifecycle hooks |
+| `connectMicroservice()` | Connects a microservice to the app |
+| `startAllMicroservices()` | Starts connected microservices |
 
-import { usePathname } from 'next/navigation';
+## Example
 
-export default function CurrentPath() {
-  const pathname = usePathname();
+```ts
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
 
-  return <p>Current path: {pathname}</p>;
+  // Adds /api prefix to all routes
+  app.setGlobalPrefix('api');
+
+  // Enables CORS for frontend apps
+  app.enableCors();
+
+  // Adds global validation
+  app.useGlobalPipes(new ValidationPipe());
+
+  await app.listen(3000);
 }
 ```
 
 ---
 
-# 20. useSearchParams()
+# 3. Modules
 
-## Purpose
+## What is a Module?
 
-Read query string values.
+A module organizes related controllers, services, and providers.
 
-```tsx
-'use client';
+Every NestJS app has at least one root module.
 
-import { useSearchParams } from 'next/navigation';
+## Main Decorator
 
-export default function SearchPage() {
-  const searchParams = useSearchParams();
+```ts
+@Module()
+```
 
-  const query = searchParams.get('q');
+## Common Module Properties
 
-  return <p>Search query: {query}</p>;
-}
+| Property | Description |
+|---|---|
+| `imports` | Other modules this module depends on |
+| `controllers` | Controllers owned by this module |
+| `providers` | Services/providers available in this module |
+| `exports` | Providers made available to other modules |
+
+## Example
+
+```ts
+import { Module } from '@nestjs/common';
+import { UsersController } from './users.controller';
+import { UsersService } from './users.service';
+
+@Module({
+  controllers: [UsersController],
+  providers: [UsersService],
+  exports: [UsersService],
+})
+export class UsersModule {}
 ```
 
 ---
 
-# 21. useParams()
+# 4. Controllers
 
-## Purpose
+## What is a Controller?
 
-Read dynamic route parameters.
+A controller handles incoming HTTP requests and returns responses.
 
-```tsx
-'use client';
+## Main Decorator
 
-import { useParams } from 'next/navigation';
-
-export default function UserClientComponent() {
-  const params = useParams();
-
-  return <p>User ID: {params.id}</p>;
-}
+```ts
+@Controller()
 ```
 
----
+## Common Controller Decorators
 
-# 22. redirect()
+| Decorator | Description |
+|---|---|
+| `@Controller()` | Defines a controller route prefix |
+| `@Get()` | Handles HTTP GET |
+| `@Post()` | Handles HTTP POST |
+| `@Put()` | Handles HTTP PUT |
+| `@Patch()` | Handles HTTP PATCH |
+| `@Delete()` | Handles HTTP DELETE |
+| `@All()` | Handles all HTTP methods |
+| `@HttpCode()` | Sets custom response status |
+| `@Header()` | Sets response header |
+| `@Redirect()` | Redirects request |
 
-## Purpose
+## Example
 
-Redirect from a Server Component or Route Handler.
+```ts
+import { Controller, Get, Post, Body, Param } from '@nestjs/common';
 
-```tsx
-import { redirect } from 'next/navigation';
-
-export default function AdminPage() {
-  const isAdmin = false;
-
-  if (!isAdmin) {
-    redirect('/login');
+@Controller('users')
+export class UsersController {
+  @Get()
+  findAll() {
+    return ['John', 'Mary'];
   }
 
-  return <h1>Admin Dashboard</h1>;
-}
-```
-
----
-
-# 23. notFound()
-
-## Purpose
-
-Render nearest `not-found.tsx`.
-
-```tsx
-import { notFound } from 'next/navigation';
-
-export default async function UserPage({ params }: any) {
-  const user = null;
-
-  if (!user) {
-    notFound();
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return { id, name: 'John' };
   }
 
-  return <div>{user.name}</div>;
+  @Post()
+  create(@Body() body: any) {
+    return {
+      message: 'User created',
+      data: body,
+    };
+  }
 }
 ```
 
 ---
 
-# 24. next/cache APIs
+# 5. Route Parameter Decorators
 
-## Common APIs
+## Common Parameter Decorators
 
-| API | Purpose |
+| Decorator | Description |
 |---|---|
-| `revalidatePath()` | Revalidate cached route path |
-| `revalidateTag()` | Revalidate cache by tag |
-| `unstable_cache()` | Cache custom async function |
-| `cacheTag()` | Add cache tag |
-| `cacheLife()` | Set cache lifetime |
+| `@Body()` | Reads request body |
+| `@Param()` | Reads route parameters |
+| `@Query()` | Reads query string |
+| `@Headers()` | Reads request headers |
+| `@Req()` | Accesses raw request object |
+| `@Res()` | Accesses raw response object |
+| `@Ip()` | Gets client IP |
+| `@Session()` | Reads session data |
 
----
-
-# 25. revalidatePath()
-
-## Purpose
-
-Refresh cached data for a specific route.
+## Example
 
 ```ts
-'use server';
-
-import { revalidatePath } from 'next/cache';
-
-export async function createUser(formData: FormData) {
-  // Save user to database
-
-  revalidatePath('/users');
+@Get(':id')
+findUser(
+  @Param('id') id: string,
+  @Query('includeOrders') includeOrders: string,
+  @Headers('authorization') token: string,
+) {
+  return {
+    id,
+    includeOrders,
+    token,
+  };
 }
 ```
 
 ---
 
-# 26. revalidateTag()
+# 6. Providers / Services
 
-## Purpose
+## What is a Provider?
 
-Refresh cached data by tag.
+A provider is a class managed by NestJS dependency injection.
+
+Common providers include:
+
+- Services
+- Repositories
+- Factories
+- Helpers
+- Database clients
+
+## Main Decorator
 
 ```ts
-import { revalidateTag } from 'next/cache';
+@Injectable()
+```
 
-export async function updateProduct() {
-  // Update product in database
+## Example
 
-  revalidateTag('products');
+```ts
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
+export class UsersService {
+  private users = [];
+
+  findAll() {
+    return this.users;
+  }
+
+  create(user: any) {
+    this.users.push(user);
+    return user;
+  }
 }
 ```
 
-Fetch with tag:
+## Injecting Service into Controller
 
 ```ts
-await fetch('https://api.example.com/products', {
-  next: {
-    tags: ['products'],
-  },
-});
-```
+@Controller('users')
+export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
 
----
-
-# 27. Fetch Caching in Next.js
-
-Next.js extends `fetch()` with caching options.
-
-## Examples
-
-### Static Cached Fetch
-
-```ts
-await fetch('https://api.example.com/products');
-```
-
-### No Cache
-
-```ts
-await fetch('https://api.example.com/products', {
-  cache: 'no-store',
-});
-```
-
-### Revalidate Every 60 Seconds
-
-```ts
-await fetch('https://api.example.com/products', {
-  next: {
-    revalidate: 60,
-  },
-});
-```
-
-### Cache Tags
-
-```ts
-await fetch('https://api.example.com/products', {
-  next: {
-    tags: ['products'],
-  },
-});
-```
-
----
-
-# 28. Server Actions
-
-## Purpose
-
-Server Actions allow forms and Client Components to call server-side functions.
-
-```tsx
-// app/actions.ts
-
-'use server';
-
-export async function createUser(formData: FormData) {
-  const name = formData.get('name');
-
-  // Save to database
-  console.log(name);
-}
-```
-
-Use in component:
-
-```tsx
-import { createUser } from './actions';
-
-export default function UserForm() {
-  return (
-    <form action={createUser}>
-      <input name="name" />
-      <button type="submit">Create User</button>
-    </form>
-  );
+  @Get()
+  findAll() {
+    return this.usersService.findAll();
+  }
 }
 ```
 
 ---
 
-# 29. next/headers APIs
+# 7. Dependency Injection
 
-## Common APIs
+## What is Dependency Injection?
 
-| API | Purpose |
+Dependency Injection allows NestJS to automatically create and inject classes where needed.
+
+## Example
+
+```ts
+@Injectable()
+export class OrdersService {
+  constructor(private readonly usersService: UsersService) {}
+
+  findOrdersForUser(userId: string) {
+    const user = this.usersService.findOne(userId);
+    return {
+      user,
+      orders: [],
+    };
+  }
+}
+```
+
+---
+
+# 8. Custom Providers
+
+## Common Provider Types
+
+| Type | Description |
 |---|---|
-| `headers()` | Read request headers |
-| `cookies()` | Read/write cookies |
+| `useClass` | Use a class as provider |
+| `useValue` | Inject static value |
+| `useFactory` | Create provider dynamically |
+| `useExisting` | Alias existing provider |
 
----
-
-# 30. headers()
-
-## Purpose
-
-Read incoming request headers in Server Components or Route Handlers.
-
-```tsx
-import { headers } from 'next/headers';
-
-export default async function Page() {
-  const headerList = await headers();
-
-  const userAgent = headerList.get('user-agent');
-
-  return <p>User Agent: {userAgent}</p>;
-}
-```
-
----
-
-# 31. cookies()
-
-## Purpose
-
-Read and write cookies.
-
-```tsx
-import { cookies } from 'next/headers';
-
-export default async function Page() {
-  const cookieStore = await cookies();
-
-  const token = cookieStore.get('token');
-
-  return <p>Token: {token?.value}</p>;
-}
-```
-
-Set cookie in Route Handler:
+## Example: useValue
 
 ```ts
-import { cookies } from 'next/headers';
+@Module({
+  providers: [
+    {
+      provide: 'DATABASE_URL',
+      useValue: 'postgres://localhost:5432/app',
+    },
+  ],
+})
+export class AppModule {}
+```
 
-export async function POST() {
-  const cookieStore = await cookies();
+## Inject Custom Provider
 
-  cookieStore.set('token', 'abc123');
-
-  return Response.json({ success: true });
+```ts
+@Injectable()
+export class DatabaseService {
+  constructor(@Inject('DATABASE_URL') private readonly dbUrl: string) {}
 }
 ```
 
 ---
 
-# 32. NextRequest and NextResponse
+# 9. Middleware
 
-## Import
+## What is Middleware?
+
+Middleware runs before route handlers.
+
+Common use cases:
+
+- Logging
+- Authentication preprocessing
+- Request modification
+- Request timing
+
+## Example
 
 ```ts
-import { NextRequest, NextResponse } from 'next/server';
+import { Injectable, NestMiddleware } from '@nestjs/common';
+
+@Injectable()
+export class LoggerMiddleware implements NestMiddleware {
+  use(req: any, res: any, next: Function) {
+    console.log(`${req.method} ${req.originalUrl}`);
+    next();
+  }
+}
 ```
 
-## Purpose
-
-Used in Route Handlers and Proxy/Middleware.
-
----
-
-## NextResponse.json()
+## Apply Middleware
 
 ```ts
-import { NextResponse } from 'next/server';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 
-export async function GET() {
-  return NextResponse.json({
-    message: 'Hello API',
-  });
+@Module({})
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(LoggerMiddleware)
+      .forRoutes('*');
+  }
 }
 ```
 
 ---
 
-## NextResponse.redirect()
+# 10. Guards
 
-```ts
-import { NextResponse } from 'next/server';
+## What is a Guard?
 
-export function GET(request: Request) {
-  return NextResponse.redirect(new URL('/login', request.url));
-}
-```
-
----
-
-## NextResponse.rewrite()
-
-```ts
-import { NextResponse } from 'next/server';
-
-export function proxy(request: Request) {
-  return NextResponse.rewrite(new URL('/new-page', request.url));
-}
-```
-
----
-
-# 33. proxy.ts
-
-## Purpose
-
-Runs before a request is completed.
-
-Older Next.js versions used `middleware.ts`. Newer docs refer to `proxy.ts`.
+A guard decides whether a request is allowed to continue.
 
 Common use cases:
 
 - Authentication
-- Redirects
-- Rewrites
-- A/B testing
-- Locale detection
-- Header modification
+- Authorization
+- Role checks
+- Permission checks
+
+## Main Interface
 
 ```ts
-// proxy.ts
+CanActivate
+```
 
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+## Example
 
-export function proxy(request: NextRequest) {
-  const token = request.cookies.get('token');
+```ts
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 
-  if (!token && request.nextUrl.pathname.startsWith('/dashboard')) {
-    return NextResponse.redirect(new URL('/login', request.url));
+@Injectable()
+export class AuthGuard implements CanActivate {
+  canActivate(context: ExecutionContext): boolean {
+    const request = context.switchToHttp().getRequest();
+
+    // Simple check for token
+    return Boolean(request.headers.authorization);
   }
-
-  return NextResponse.next();
 }
+```
 
-export const config = {
-  matcher: ['/dashboard/:path*'],
-};
+## Use Guard
+
+```ts
+@UseGuards(AuthGuard)
+@Get('profile')
+getProfile() {
+  return { message: 'Protected route' };
+}
 ```
 
 ---
 
-# 34. next.config.js / next.config.ts
+# 11. Pipes
 
-## Purpose
+## What is a Pipe?
 
-Configure Next.js behavior.
+A pipe transforms or validates incoming data.
 
-```ts
-// next.config.ts
+Common use cases:
 
-import type { NextConfig } from 'next';
+- DTO validation
+- Type conversion
+- Input sanitization
 
-const nextConfig: NextConfig = {
-  reactStrictMode: true,
+## Built-in Pipes
 
-  images: {
-    domains: ['example.com'],
-  },
-
-  env: {
-    APP_NAME: 'My Next App',
-  },
-};
-
-export default nextConfig;
-```
-
-## Common Config Properties
-
-| Property | Purpose |
+| Pipe | Description |
 |---|---|
-| `reactStrictMode` | Enables React Strict Mode |
-| `images` | Configures image optimization |
-| `env` | Adds environment variables |
-| `redirects()` | Defines redirects |
-| `rewrites()` | Defines rewrites |
-| `headers()` | Defines custom headers |
-| `output` | Deployment output mode |
-| `experimental` | Enables experimental features |
+| `ValidationPipe` | Validates DTOs |
+| `ParseIntPipe` | Converts string to number |
+| `ParseBoolPipe` | Converts string to boolean |
+| `ParseArrayPipe` | Parses array values |
+| `ParseUUIDPipe` | Validates UUID |
+| `DefaultValuePipe` | Provides default value |
 
----
-
-# 35. Redirects in Config
+## Example
 
 ```ts
-const nextConfig = {
-  async redirects() {
-    return [
-      {
-        source: '/old-page',
-        destination: '/new-page',
-        permanent: true,
-      },
-    ];
-  },
-};
-
-export default nextConfig;
+@Get(':id')
+findOne(@Param('id', ParseIntPipe) id: number) {
+  return {
+    id,
+    type: typeof id,
+  };
+}
 ```
 
----
-
-# 36. Rewrites in Config
+## Global Validation Pipe
 
 ```ts
-const nextConfig = {
-  async rewrites() {
-    return [
-      {
-        source: '/api/proxy/:path*',
-        destination: 'https://api.example.com/:path*',
-      },
-    ];
-  },
-};
-
-export default nextConfig;
+app.useGlobalPipes(
+  new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+  }),
+);
 ```
 
 ---
 
-# 37. Headers in Config
+# 12. DTOs
+
+## What is a DTO?
+
+DTO means Data Transfer Object.
+
+It defines the shape of incoming request data.
+
+## Example
 
 ```ts
-const nextConfig = {
-  async headers() {
-    return [
-      {
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-        ],
-      },
-    ];
-  },
-};
+import { IsEmail, IsString, MinLength } from 'class-validator';
 
-export default nextConfig;
+export class CreateUserDto {
+  @IsString()
+  name: string;
+
+  @IsEmail()
+  email: string;
+
+  @MinLength(8)
+  password: string;
+}
 ```
 
----
-
-# 38. Environment Variables
-
-## Public Browser Variable
-
-Must start with:
-
-```txt
-NEXT_PUBLIC_
-```
-
-```env
-NEXT_PUBLIC_API_URL=https://api.example.com
-```
-
-Use in client:
-
-```tsx
-const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-```
-
-## Server-only Variable
-
-```env
-DATABASE_URL=postgresql://localhost:5432/app
-```
-
-Use only in Server Components, Route Handlers, or Server Actions:
+## Use DTO
 
 ```ts
-const dbUrl = process.env.DATABASE_URL;
+@Post()
+create(@Body() createUserDto: CreateUserDto) {
+  return createUserDto;
+}
 ```
 
 ---
 
-# 39. Pages Router APIs
+# 13. Interceptors
 
-These are used in the older `/pages` directory.
+## What is an Interceptor?
 
-## Common APIs
+An interceptor wraps request/response execution.
 
-| API | Purpose |
+Common use cases:
+
+- Logging
+- Response transformation
+- Performance timing
+- Caching
+- Error mapping
+
+## Example
+
+```ts
+import {
+  Injectable,
+  NestInterceptor,
+  ExecutionContext,
+  CallHandler,
+} from '@nestjs/common';
+
+import { Observable, map } from 'rxjs';
+
+@Injectable()
+export class ResponseInterceptor implements NestInterceptor {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+    return next.handle().pipe(
+      map(data => ({
+        success: true,
+        data,
+      })),
+    );
+  }
+}
+```
+
+## Use Interceptor
+
+```ts
+@UseInterceptors(ResponseInterceptor)
+@Get()
+findAll() {
+  return ['user1', 'user2'];
+}
+```
+
+---
+
+# 14. Exception Filters
+
+## What is an Exception Filter?
+
+Exception filters customize error handling.
+
+## Example
+
+```ts
+import {
+  ExceptionFilter,
+  Catch,
+  ArgumentsHost,
+  HttpException,
+} from '@nestjs/common';
+
+@Catch(HttpException)
+export class HttpErrorFilter implements ExceptionFilter {
+  catch(exception: HttpException, host: ArgumentsHost) {
+    const response = host.switchToHttp().getResponse();
+    const status = exception.getStatus();
+
+    response.status(status).json({
+      statusCode: status,
+      message: exception.message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+}
+```
+
+## Use Filter
+
+```ts
+@UseFilters(HttpErrorFilter)
+@Get()
+findAll() {
+  throw new NotFoundException('Users not found');
+}
+```
+
+---
+
+# 15. Built-in HTTP Exceptions
+
+## Common Exceptions
+
+| Exception | HTTP Status |
 |---|---|
-| `getStaticProps()` | Static generation with data |
-| `getStaticPaths()` | Static dynamic routes |
-| `getServerSideProps()` | Server-side rendering per request |
-| `useRouter()` from `next/router` | Client navigation |
-| API Routes | Backend API under `/pages/api` |
-| `_app.tsx` | Custom app wrapper |
-| `_document.tsx` | Custom HTML document |
+| `BadRequestException` | 400 |
+| `UnauthorizedException` | 401 |
+| `ForbiddenException` | 403 |
+| `NotFoundException` | 404 |
+| `MethodNotAllowedException` | 405 |
+| `NotAcceptableException` | 406 |
+| `ConflictException` | 409 |
+| `GoneException` | 410 |
+| `PayloadTooLargeException` | 413 |
+| `UnsupportedMediaTypeException` | 415 |
+| `UnprocessableEntityException` | 422 |
+| `InternalServerErrorException` | 500 |
+| `ServiceUnavailableException` | 503 |
 
----
-
-# 40. getStaticProps()
-
-## Purpose
-
-Fetch data at build time.
-
-```tsx
-export async function getStaticProps() {
-  const products = await fetch('https://api.example.com/products')
-    .then(res => res.json());
-
-  return {
-    props: {
-      products,
-    },
-    revalidate: 60,
-  };
-}
-
-export default function ProductsPage({ products }: any) {
-  return (
-    <div>
-      {products.map((p: any) => (
-        <p key={p.id}>{p.name}</p>
-      ))}
-    </div>
-  );
-}
-```
-
----
-
-# 41. getStaticPaths()
-
-## Purpose
-
-Generate dynamic static pages.
-
-```tsx
-export async function getStaticPaths() {
-  return {
-    paths: [
-      { params: { id: '1' } },
-      { params: { id: '2' } },
-    ],
-    fallback: false,
-  };
-}
-
-export async function getStaticProps({ params }: any) {
-  return {
-    props: {
-      id: params.id,
-    },
-  };
-}
-```
-
----
-
-# 42. getServerSideProps()
-
-## Purpose
-
-Fetch data on every request.
-
-```tsx
-export async function getServerSideProps(context: any) {
-  const token = context.req.cookies.token;
-
-  if (!token) {
-    return {
-      redirect: {
-        destination: '/login',
-        permanent: false,
-      },
-    };
-  }
-
-  return {
-    props: {
-      user: { name: 'John' },
-    },
-  };
-}
-```
-
----
-
-# 43. Pages Router API Route
+## Example
 
 ```ts
-// pages/api/users.ts
-
-import type { NextApiRequest, NextApiResponse } from 'next';
-
-export default function handler(
-  req: NextApiRequest,
-  res: NextApiResponse,
-) {
-  if (req.method === 'GET') {
-    return res.status(200).json([
-      { id: 1, name: 'John' },
-    ]);
+@Get(':id')
+findOne(@Param('id') id: string) {
+  if (!id) {
+    throw new BadRequestException('User id is required');
   }
 
-  return res.status(405).json({
-    message: 'Method not allowed',
+  throw new NotFoundException('User not found');
+}
+```
+
+---
+
+# 16. Decorators
+
+## Common NestJS Decorators
+
+| Decorator | Purpose |
+|---|---|
+| `@Module()` | Defines a module |
+| `@Controller()` | Defines a controller |
+| `@Injectable()` | Defines a provider |
+| `@Inject()` | Injects custom provider |
+| `@Get()` | GET route |
+| `@Post()` | POST route |
+| `@Put()` | PUT route |
+| `@Patch()` | PATCH route |
+| `@Delete()` | DELETE route |
+| `@Body()` | Request body |
+| `@Param()` | Route parameter |
+| `@Query()` | Query parameter |
+| `@Headers()` | Request header |
+| `@UseGuards()` | Applies guards |
+| `@UsePipes()` | Applies pipes |
+| `@UseInterceptors()` | Applies interceptors |
+| `@UseFilters()` | Applies filters |
+| `@SetMetadata()` | Adds custom metadata |
+
+---
+
+# 17. Custom Decorators
+
+## What is a Custom Decorator?
+
+A custom decorator extracts repeated logic from controllers.
+
+## Example
+
+```ts
+import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+
+export const CurrentUser = createParamDecorator(
+  (data: unknown, context: ExecutionContext) => {
+    const request = context.switchToHttp().getRequest();
+    return request.user;
+  },
+);
+```
+
+## Use Custom Decorator
+
+```ts
+@Get('me')
+getMe(@CurrentUser() user: any) {
+  return user;
+}
+```
+
+---
+
+# 18. ExecutionContext
+
+## What is ExecutionContext?
+
+`ExecutionContext` gives access to the current request context.
+
+It works with:
+
+- HTTP
+- WebSockets
+- Microservices
+
+## Example
+
+```ts
+canActivate(context: ExecutionContext): boolean {
+  const request = context.switchToHttp().getRequest();
+
+  return request.user?.role === 'admin';
+}
+```
+
+---
+
+# 19. Lifecycle Hooks
+
+## Common Lifecycle Interfaces
+
+| Hook | Description |
+|---|---|
+| `OnModuleInit` | Runs after module initialization |
+| `OnApplicationBootstrap` | Runs after app bootstrap |
+| `OnModuleDestroy` | Runs when module is destroyed |
+| `BeforeApplicationShutdown` | Runs before shutdown |
+| `OnApplicationShutdown` | Runs during shutdown |
+
+## Example
+
+```ts
+import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+
+@Injectable()
+export class DatabaseService implements OnModuleInit, OnModuleDestroy {
+  async onModuleInit() {
+    console.log('Connect to database');
+  }
+
+  async onModuleDestroy() {
+    console.log('Close database connection');
+  }
+}
+```
+
+---
+
+# 20. Configuration
+
+## What is ConfigModule?
+
+`ConfigModule` manages environment variables.
+
+## Example
+
+```ts
+import { ConfigModule } from '@nestjs/config';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+## Use ConfigService
+
+```ts
+@Injectable()
+export class AppService {
+  constructor(private readonly configService: ConfigService) {}
+
+  getDatabaseUrl() {
+    return this.configService.get<string>('DATABASE_URL');
+  }
+}
+```
+
+---
+
+# 21. REST API Example
+
+## Controller
+
+```ts
+@Controller('products')
+export class ProductsController {
+  constructor(private readonly productsService: ProductsService) {}
+
+  @Get()
+  findAll() {
+    return this.productsService.findAll();
+  }
+
+  @Post()
+  create(@Body() body: any) {
+    return this.productsService.create(body);
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.productsService.findOne(id);
+  }
+}
+```
+
+## Service
+
+```ts
+@Injectable()
+export class ProductsService {
+  private products = [];
+
+  findAll() {
+    return this.products;
+  }
+
+  create(product: any) {
+    this.products.push(product);
+    return product;
+  }
+
+  findOne(id: string) {
+    return this.products.find(product => product.id === id);
+  }
+}
+```
+
+---
+
+# 22. Microservices
+
+## What is NestJS Microservice Support?
+
+NestJS can build microservices using transports like:
+
+- TCP
+- Redis
+- NATS
+- MQTT
+- Kafka
+- RabbitMQ
+- gRPC
+
+## Example
+
+```ts
+const app = await NestFactory.createMicroservice(AppModule, {
+  transport: Transport.TCP,
+  options: {
+    host: 'localhost',
+    port: 3001,
+  },
+});
+
+await app.listen();
+```
+
+## Message Pattern
+
+```ts
+@MessagePattern({ cmd: 'sum' })
+sum(data: number[]): number {
+  return data.reduce((a, b) => a + b, 0);
+}
+```
+
+---
+
+# 23. WebSockets
+
+## What is a WebSocket Gateway?
+
+A gateway handles real-time communication.
+
+## Example
+
+```ts
+import {
+  WebSocketGateway,
+  SubscribeMessage,
+  MessageBody,
+} from '@nestjs/websockets';
+
+@WebSocketGateway()
+export class ChatGateway {
+  @SubscribeMessage('message')
+  handleMessage(@MessageBody() data: string): string {
+    return `Received: ${data}`;
+  }
+}
+```
+
+---
+
+# 24. Testing
+
+## Common Testing Tools
+
+| Tool | Purpose |
+|---|---|
+| Jest | Unit testing |
+| Supertest | E2E HTTP testing |
+| TestingModule | NestJS testing module |
+
+## Unit Test Example
+
+```ts
+describe('UsersService', () => {
+  let service: UsersService;
+
+  beforeEach(async () => {
+    const module = await Test.createTestingModule({
+      providers: [UsersService],
+    }).compile();
+
+    service = module.get<UsersService>(UsersService);
   });
+
+  it('should return users', () => {
+    expect(service.findAll()).toEqual([]);
+  });
+});
+```
+
+---
+
+# 25. Swagger / OpenAPI
+
+## What is Swagger in NestJS?
+
+Swagger documents REST APIs.
+
+## Example
+
+```ts
+const config = new DocumentBuilder()
+  .setTitle('Users API')
+  .setDescription('User management API')
+  .setVersion('1.0')
+  .addBearerAuth()
+  .build();
+
+const document = SwaggerModule.createDocument(app, config);
+
+SwaggerModule.setup('api-docs', app, document);
+```
+
+## DTO Swagger Decorators
+
+```ts
+export class CreateUserDto {
+  @ApiProperty()
+  name: string;
+
+  @ApiProperty()
+  email: string;
 }
 ```
 
 ---
 
-# 44. SEO Features
+# 26. Authentication
 
-## Metadata Example
+## Common Auth Tools
 
-```tsx
-export const metadata = {
-  title: 'Products',
-  description: 'Browse our products',
-};
-```
+| Tool | Purpose |
+|---|---|
+| Passport | Authentication middleware |
+| JWT | Token-based authentication |
+| Guards | Protect routes |
+| bcrypt | Password hashing |
 
-## Dynamic Metadata
-
-```tsx
-export async function generateMetadata({ params }: any) {
-  return {
-    title: `Product ${params.id}`,
-  };
-}
-```
-
-## Sitemap
+## JWT Guard Example
 
 ```ts
-// app/sitemap.ts
+@Injectable()
+export class JwtAuthGuard implements CanActivate {
+  canActivate(context: ExecutionContext): boolean {
+    const request = context.switchToHttp().getRequest();
 
-export default function sitemap() {
-  return [
-    {
-      url: 'https://example.com',
-      lastModified: new Date(),
-    },
-  ];
-}
-```
+    const token = request.headers.authorization;
 
-## Robots
-
-```ts
-// app/robots.ts
-
-export default function robots() {
-  return {
-    rules: {
-      userAgent: '*',
-      allow: '/',
-    },
-    sitemap: 'https://example.com/sitemap.xml',
-  };
-}
-```
-
----
-
-# 45. Deployment Commands
-
-## Development
-
-```bash
-npm run dev
-```
-
-## Production Build
-
-```bash
-npm run build
-```
-
-## Start Production Server
-
-```bash
-npm run start
-```
-
-## Common package.json Scripts
-
-```json
-{
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    return Boolean(token);
   }
 }
 ```
 
 ---
 
-# 46. Senior Interview Summary
+# 27. Common NestJS CLI Commands
 
-## Most Important Next.js APIs to Know
-
-1. `page.tsx`
-2. `layout.tsx`
-3. `loading.tsx`
-4. `error.tsx`
-5. `not-found.tsx`
-6. `route.ts`
-7. `Link`
-8. `Image`
-9. `Script`
-10. `metadata`
-11. `generateMetadata`
-12. `useRouter`
-13. `usePathname`
-14. `useSearchParams`
-15. `useParams`
-16. `redirect`
-17. `notFound`
-18. `headers`
-19. `cookies`
-20. `NextRequest`
-21. `NextResponse`
-22. `revalidatePath`
-23. `revalidateTag`
-24. `Server Actions`
-25. `proxy.ts`
-26. `next.config.ts`
-27. `getStaticProps`
-28. `getStaticPaths`
-29. `getServerSideProps`
+| Command | Description |
+|---|---|
+| `nest new app-name` | Creates new project |
+| `nest generate module users` | Creates module |
+| `nest generate controller users` | Creates controller |
+| `nest generate service users` | Creates service |
+| `nest generate resource users` | Creates CRUD resource |
+| `nest build` | Builds app |
+| `nest start` | Starts app |
+| `nest start --watch` | Starts app in watch mode |
 
 ---
 
-# 47. Senior Interview Answer
+# 28. Senior Interview Summary
 
-Next.js is a full-stack React framework that supports server rendering, static generation, file-based routing, API routes, middleware/proxy, image optimization, metadata management, and server/client component architecture. In modern Next.js, I prefer the App Router because it supports React Server Components, nested layouts, streaming, Route Handlers, Server Actions, and improved data fetching. For production, I focus on caching strategy, SEO metadata, image optimization, route-level loading/error states, environment configuration, CI/CD deployment, and performance monitoring.
+## Most Important NestJS Concepts
+
+1. Modules organize the application.
+2. Controllers handle HTTP requests.
+3. Providers/services contain business logic.
+4. Dependency Injection wires classes together.
+5. Guards handle authorization.
+6. Pipes validate and transform data.
+7. Interceptors wrap request/response logic.
+8. Filters handle exceptions.
+9. Middleware runs before guards and controllers.
+10. DTOs define request payload shape.
+11. ConfigModule manages environment variables.
+12. NestFactory bootstraps the app.
+13. Microservices allow event/message-based architecture.
+14. Swagger documents APIs.
+15. TestingModule supports unit and integration testing.
+
+---
+
+# 29. Common Senior Interview Answer
+
+NestJS is a structured backend framework for Node.js that uses TypeScript, decorators, modules, dependency injection, and providers to build scalable applications. I use controllers for request handling, services for business logic, DTOs and pipes for validation, guards for authorization, interceptors for logging and response transformation, and filters for consistent error handling. For production, I configure environment variables, logging, Swagger documentation, global validation, security middleware, and CI/CD deployment.
